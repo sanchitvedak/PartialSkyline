@@ -1,0 +1,175 @@
+/**
+ *
+ * Main.java
+ *
+ * Implementation of evaluation of skyline queries with partially ordered attributes
+ * 
+ * @author sanchit
+ * 
+ */
+
+import java.io.*;
+
+public class Main 
+{
+    public static void main(String [] args) throws Exception
+    {
+        BufferedReader br = new BufferedReader(new FileReader("skylineInput.txt"));
+        
+        String [] s = br.readLine().split(" ");
+        int m = Integer.parseInt(s[0]);
+        int n = Integer.parseInt(s[1]);
+        
+        String [][] a = new String[m][n];
+        double [] distance = new double[m];
+        
+        int [] visited = new int[m];
+                
+        int [] skyline = new int[m];
+        
+        double [] max = new double[n]; 
+       
+        for(int i=0; i<m; i++)
+        {
+            a[i] = br.readLine().split(" ");
+
+            for(int j=1; j<n-1; j++)
+                if(Double.parseDouble(a[i][j])>max[j])
+                    max[j] = Double.parseDouble(a[i][j]);
+        }
+
+        String str1 = br.readLine();
+        int count = 0;
+
+        for(int i=0; i<str1.length(); i++)
+            if(Character.isLetter(str1.charAt(i)))
+                count++;
+
+        char [] preference_name = new char[count];
+
+        double [] preference_val = new double[count];
+        
+        String [] str = str1.split(" ");
+        
+        int weight = 1;
+        count = 1;
+        int z = 0;
+
+        for(int i=0; i<str.length; i+=2)
+        {
+            if(str[i].indexOf(",")!=-1)
+            {
+                String [] temp_str = str[i].split(",");
+                for(int j=0; j<temp_str.length; j++)
+                {
+                    preference_name[z] = temp_str[j].charAt(0);
+                    preference_val[z++] = count*weight;
+                }
+            }
+            else
+            {
+                preference_name[z] = str[i].charAt(0);
+                preference_val[z++] = count*weight;
+            }
+            if(i+1<str.length)
+                weight = str[i+1].length();
+            count++;
+        }
+
+        System.out.println("Topologically sorted order:");
+        
+        for(int i=0; i<preference_name.length; i++)
+            System.out.println(preference_name[i]);
+        System.out.println();
+
+        for(int i=0; i<m; i++)
+        {
+            for(int j=1; j<n-1; j++)
+                a[i][j] = Double.toString(Double.parseDouble(a[i][j])/max[j]);
+        }
+   
+        for(int i=0; i<m; i++)
+        {
+            double pref_val = 0;
+            for(int j=0; j<preference_name.length; j++)
+                if(preference_name[j]==a[i][n-1].charAt(0))
+                {
+                    pref_val = preference_val[j];
+                    break;
+                }
+                    
+            a[i][n-1] = Double.toString(pref_val);
+        }
+     
+        for(int i=0; i<m; i++)
+        {
+            double sum = 0;
+            for(int j=1; j<n; j++)
+                sum += Math.pow(Double.parseDouble(a[i][j]), 2);
+            distance[i] = Math.sqrt(sum); 
+        }
+        
+        for(int i=0; i<m; i++)
+            for(int j=i; j<m; j++)
+                if(distance[i]>distance[j])
+                {  
+                    String [] temp1 = a[i];
+                    a[i] = a[j];
+                    a[j] = temp1;                
+                    double temp2 = distance[i];
+                    distance[i] = distance[j];
+                    distance[j] = temp2; 
+                }
+       
+        for(int i=0; i<m; i++)
+        {
+            if(visited[i]==1)
+                continue;
+            else
+            {
+                System.out.println("\nConsidering tuple "+a[i][0]);
+                skyline[i] = 1;
+                visited[i] = 1;
+            }
+            for(int j=0; j<m; j++)
+            {
+                if(visited[j]!=1)
+                {
+                    int counter = 0;
+                    for(int k=1; k<n; k++)
+                    {
+                        if(Double.parseDouble(a[j][k])>=Double.parseDouble(a[i][k]))
+                            counter++;
+                    }
+                    if(counter==n-1)
+                    {
+                        int equalitycounter=0;
+                        for(int k=1; k<n; k++)
+                        {
+                            if(Double.parseDouble(a[j][k])==Double.parseDouble(a[i][k]))
+                                equalitycounter++;
+                        }
+                    
+                        if(equalitycounter!=counter)
+                        {
+                            System.out.println("Tuple "+a[i][0]+" dominates tuple "+a[j][0]);
+                            visited[j] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        System.out.println("\n\nThe skyline has following tuples: \n");
+        for(int i=0; i<m; i++)
+        {
+            if(skyline[i]==1)
+            {
+                System.out.print(a[i][0]+"\t");
+                for(int j=1; j<n-1; j++)
+                    System.out.print(Double.parseDouble(a[i][j])*max[j]+"\t");
+                System.out.println();
+            }
+        }
+    }
+}
